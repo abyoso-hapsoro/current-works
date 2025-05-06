@@ -7,8 +7,9 @@ def solve_linear_diophantine_nonnegative(
     coeffs: list[int],
     constant: int,
     var_names: list[str] = None,
+    bound_limit: int = 100,
     verbose: bool = True
-) -> list[tuple[int, ...]]:
+) -> tuple[list[tuple[int, ...]], list[str]]:
     """
     Solves a linear Diophantine equation of the form:
         a1*x1 + a2*x2 + ... + an*xn = c
@@ -21,9 +22,16 @@ def solve_linear_diophantine_nonnegative(
             Target value to solve.
         var_names (list[str]):
             Optional list of variable names ['x', 'y', 'z', ...]. Defaults to None.
+        bound_limit (int):
+            Maximum value for parameter bound to limit computation time. Defaults to 100.
+        verbose (bool):
+            Prints analytical solution and other information. Defaults to True.
 
     Returns:
-        list[tuple[int, ...]]: List of tuples containing nonnegative integer solutions.
+        tuple[list[tuple[int, ...]], list[str]]:
+            Tuple with two elements:
+            - List of tuples containing nonnegative integer solutions.
+            - List of variable names.
     """
 
     # Validate coefficients
@@ -56,9 +64,12 @@ def solve_linear_diophantine_nonnegative(
     # Obtain analytical parametric solution
     sol_set = diophantine(eq)
     if verbose:
-        print(f'[INFO] Analytical solution is {sol_set}')
+        if len(sol_set) == 1:
+            print(f'[INFO] Analytical solution is {next(iter(sol_set))}')
+        else:
+            print(f'[INFO] Analytical solutions are {sol_set}')
 
-    # Initialize solution set then iterate
+    # Initialize solution set then iterate (TODO: Implement more efficient algorithm to produce valid solutions)
     valid_solutions = set()
     for sol in sol_set:
         # Get all parameters used across all expressions
@@ -71,8 +82,8 @@ def solve_linear_diophantine_nonnegative(
         else:
             # Get minimum magnitude for parameter values
             min_coeff = min(abs(coeff) for coeff in simplified_coeffs)
-            # Calculate effective bound (sum of minimum term contributions <= constant)
-            param_bound = 3 * constant // min_coeff  # TODO: Improve parameter bound calculation logic
+            # Calculate parameter bound
+            param_bound = min(bound_limit, (constant ** 2) // min_coeff)
             # Iterate to append valid solutions
             for values in product(range(-param_bound, param_bound + 1), repeat=len(all_params)):
                 subs = dict(zip(all_params, values))
@@ -88,12 +99,12 @@ def solve_linear_diophantine_nonnegative(
 
 
 if __name__ == '__main__':
-    # Example Usage:
+    # Example Usage: Solve 11x + 8y + 9z = 96
     coefficients = [11, 8, 9]
     variables = ['x', 'y', 'z']
     target = 96
 
-    # Solve 11x + 8y + 9z = 96
+    # Run linear Diophanine solver with nonnegative results
     solutions, solution_vars = solve_linear_diophantine_nonnegative(coefficients, target, variables)
     print('[RESULT]')
     pprint_format_as_set(solutions, solution_vars)
